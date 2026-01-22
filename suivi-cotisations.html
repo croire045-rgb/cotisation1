@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi des Cotisations</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function(){
+            emailjs.init("-3xgWMNLowM-Y7-Bj"); // À remplacer par votre clé publique EmailJS
+        })();
+    </script>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #3b82f6;
+            --accent: #60a5fa;
+            --success: #10b981;
+            --danger: #ef4444;
+            --light: #f8fafc;
+            --white: #ffffff;
+            --shadow: rgba(30, 58, 138, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            min-height: 100vh;
+            color: var(--primary);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: var(--white);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px var(--shadow);
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: var(--secondary);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Sélecteur d'année */
+        .year-selector {
+            background: var(--white);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px var(--shadow);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .year-btn {
+            padding: 12px 30px;
+            border: 2px solid var(--primary);
+            background: transparent;
+            color: var(--primary);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .year-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--shadow);
+        }
+
+        .year-btn.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+
+        .year-btn:disabled {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+            color: #9ca3af;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .year-btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .lock-icon {
+            margin-left: 5px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px var(--shadow);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--secondary);
+            font-weight: 500;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-value.success {
+            color: var(--success);
+        }
+
+        .stat-value.danger {
+            color: var(--danger);
+        }
+
+        .stat-value.accent {
+            color: var(--secondary);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .table-container {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px var(--shadow);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .table-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: var(--white);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .export-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px var(--shadow);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        thead {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: var(--white);
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        th:first-child {
+            border-top-left-radius: 10px;
+        }
+
+        th:last-child {
+            border-top-right-radius: 10px;
+        }
+
+        tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: #f1f5f9;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .status-btn {
+            padding: 8px 16px;
+            border: 2px solid;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .status-btn.paid {
+            background: var(--success);
+            color: var(--white);
+            border-color: var(--success);
+        }
+
+        .status-btn.unpaid {
+            background: transparent;
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .status-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .date-display {
+            color: var(--secondary);
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        .summary-panel {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px var(--shadow);
+        }
+
+        .summary-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 25px;
+        }
+
+        .person-summary {
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .person-name {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+
+        .person-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .person-stats span:first-child {
+            color: var(--secondary);
+        }
+
+        .person-stats span:last-child {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary) 0%, var(--accent) 100%);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: var(--white);
+            border-radius: 15px;
+            box-shadow: 0 5px 20px var(--shadow);
+            margin-top: 30px;
+        }
+
+        footer p {
+            color: var(--secondary);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            table {
+                font-size: 0.85rem;
+            }
+
+            th, td {
+                padding: 10px 8px;
+            }
+        }
+
+        .alert-message {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #92400e;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Suivi des Cotisations</h1>
+            <p class="subtitle">Janvier 2026 - Décembre 2028 • 36 mois</p>
+            <div style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <label style="font-weight: 600; color: var(--primary);">Montant par personne/mois :</label>
+                <input type="number" id="amountInput" value="100000" min="1000" step="1000" 
+                       style="padding: 10px 15px; border: 2px solid var(--secondary); border-radius: 8px; font-size: 1rem; font-weight: 600; width: 150px; text-align: center;"
+                       onchange="updateAmount()">
+                <span style="font-weight: 600; color: var(--secondary);">FCFA</span>
+            </div>
+        </header>
+
+        <!-- Sélecteur d'année -->
+        <div class="year-selector">
+            <button class="year-btn active" id="year2026" onclick="selectYear(2026)">2026</button>
+            <button class="year-btn" id="year2027" onclick="selectYear(2027)" disabled>
+                2027 <span class="lock-icon">🔒</span>
+            </button>
+            <button class="year-btn" id="year2028" onclick="selectYear(2028)" disabled>
+                2028 <span class="lock-icon">🔒</span>
+            </button>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <div class="dashboard" id="dashboard">
+            <div class="stat-card">
+                <div class="stat-label">Total Attendu</div>
+                <div class="stat-value" id="totalExpected">7 200 000 FCFA</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Collecté</div>
+                <div class="stat-value success" id="totalCollected">0 FCFA</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Reste à Collecter</div>
+                <div class="stat-value danger" id="remaining">7 200 000 FCFA</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Taux de Recouvrement</div>
+                <div class="stat-value accent" id="recoveryRate">0%</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="table-container">
+                <div class="table-header">
+                    <h2 class="table-title" id="tableYearTitle">Registre 2026</h2>
+                    <button class="export-btn" onclick="exportToExcel()"><strong>📥 Exporter en Excel</strong></button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="cotisationsTable">
+                        <thead>
+                            <tr>
+                                <th>Mois</th>
+                                <th>MANANGA KIBANGOU Prévis Croire</th>
+                                <th>Montant</th>
+                                <th>Date</th>
+                                <th>BADINGOUSSOU-PEMBA Splendeurs Prodiges</th>
+                                <th>Montant</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="summary-panel">
+                <h2 class="summary-title">Résumé Individuel</h2>
+                
+                <div class="person-summary">
+                    <div class="person-name">MANANGA KIBANGOU Prévis Croire</div>
+                    <div class="person-stats">
+                        <span>Paiements effectués:</span>
+                        <span id="manangaPaid">0 / 36</span>
+                    </div>
+                    <div class="person-stats">
+                        <span>Total collecté:</span>
+                        <span id="manangaTotal">0 FCFA</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="manangaProgress" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="person-summary">
+                    <div class="person-name">BADINGOUSSOU-PEMBA Splendeurs Prodiges</div>
+                    <div class="person-stats">
+                        <span>Paiements effectués:</span>
+                        <span id="prodigesPaid">0 / 36</span>
+                    </div>
+                    <div class="person-stats">
+                        <span>Total collecté:</span>
+                        <span id="prodigesTotal">0 FCFA</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="prodigesProgress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>© 2026 Suivi des Cotisations • Les données sont sauvegardées localement dans votre navigateur</p>
+            <button onclick="resetAllData()" style="margin-top: 10px; padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                🔄 Réinitialiser toutes les données
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        let AMOUNT_PER_PERSON = 100000; // Montant variable (par défaut 100 000 FCFA)
+        const TOTAL_EXPECTED = 7200000; // 7 200 000 FCFA sur 3 ans
+        const TOTAL_MONTHS = 36; // 3 ans * 12 mois
+        
+        // Configuration EmailJS - À CONFIGURER
+        const EMAILJS_SERVICE_ID = 'cotisations_78zsdem'; // À remplacer
+        const EMAILJS_TEMPLATE_ID = 'template_jz7c1ju'; // À remplacer
+        const EMAILJS_PUBLIC_KEY = '-3xgWMNLowM-Y7-Bj'; // À remplacer
+        
+        // Configuration des emails
+        const EMAIL_CONFIG = {
+            'mananga': {
+                name: 'MANANGA KIBANGOU Prévis Croire',
+                email: 'croire045@gmail.com',
+                notifyEmail: 'prodigesbadingoussou@gmail.com',
+                notifyName: 'BADINGOUSSOU-PEMBA Splendeurs Prodiges'
+            },
+            'prodiges': {
+                name: 'BADINGOUSSOU-PEMBA Splendeurs Prodiges',
+                email: 'prodigesbadingoussou@gmail.com',
+                notifyEmail: 'croire045@gmail.com',
+                notifyName: 'MANANGA KIBANGOU Prévis Croire'
+            }
+        };
+        
+        // Fonction pour envoyer un email de notification
+        function sendPaymentNotification(person, month, amount, totalCollected, recoveryRate) {
+            const config = EMAIL_CONFIG[person];
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('fr-FR');
+            const timeStr = now.toLocaleTimeString('fr-FR');
+            
+            const templateParams = {
+                to_email: config.notifyEmail,
+                to_name: config.notifyName,
+                from_name: config.name,
+                month: month,
+                amount: amount.toLocaleString('fr-FR'),
+                date: dateStr,
+                time: timeStr,
+                total_collected: totalCollected.toLocaleString('fr-FR'),
+                total_expected: TOTAL_EXPECTED.toLocaleString('fr-FR'),
+                recovery_rate: recoveryRate,
+                remaining: (TOTAL_EXPECTED - totalCollected).toLocaleString('fr-FR')
+            };
+            
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+                .then(function(response) {
+                    console.log('✅ Email envoyé avec succès!', response.status, response.text);
+                    showNotification(`✅ Notification envoyée à ${config.notifyName}`, 'success');
+                }, function(error) {
+                    console.error('❌ Erreur lors de l\'envoi de l\'email:', error);
+                    showNotification('❌ Erreur lors de l\'envoi de la notification', 'error');
+                });
+        }
+        
+        // Fonction pour afficher une notification dans l'interface
+        function showNotification(message, type = 'info') {
+            const alertContainer = document.getElementById('alertContainer');
+            const colors = {
+                success: { bg: '#dcfce7', border: '#10b981', text: '#065f46' },
+                warning: { bg: '#fef3c7', border: '#f59e0b', text: '#92400e' },
+                error: { bg: '#fee2e2', border: '#ef4444', text: '#991b1b' },
+                info: { bg: '#dbeafe', border: '#3b82f6', text: '#1e3a8a' }
+            };
+            
+            const color = colors[type] || colors.info;
+            
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                background: ${color.bg};
+                border-left: 4px solid ${color.border};
+                color: ${color.text};
+                padding: 15px 20px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                font-weight: 500;
+                animation: fadeInUp 0.3s ease-out;
+            `;
+            notification.textContent = message;
+            
+            alertContainer.appendChild(notification);
+            
+            // Supprimer après 5 secondes
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+        
+        // Fonction pour mettre à jour le montant
+        function updateAmount() {
+            const newAmount = parseInt(document.getElementById('amountInput').value);
+            if (newAmount && newAmount > 0) {
+                AMOUNT_PER_PERSON = newAmount;
+                localStorage.setItem('amountPerPerson', AMOUNT_PER_PERSON);
+                updateStats();
+                console.log('Montant mis à jour:', AMOUNT_PER_PERSON);
+            }
+        }
+        
+        // Charger le montant sauvegardé
+        function loadAmount() {
+            const saved = localStorage.getItem('amountPerPerson');
+            if (saved) {
+                AMOUNT_PER_PERSON = parseInt(saved);
+                document.getElementById('amountInput').value = AMOUNT_PER_PERSON;
+            }
+        }
+        
+        const MONTHS_BY_YEAR = {
+            2026: [
+                'Janvier 2026', 'Février 2026', 'Mars 2026', 'Avril 2026', 'Mai 2026', 'Juin 2026',
+                'Juillet 2026', 'Août 2026', 'Septembre 2026', 'Octobre 2026', 'Novembre 2026', 'Décembre 2026'
+            ],
+            2027: [
+                'Janvier 2027', 'Février 2027', 'Mars 2027', 'Avril 2027', 'Mai 2027', 'Juin 2027',
+                'Juillet 2027', 'Août 2027', 'Septembre 2027', 'Octobre 2027', 'Novembre 2027', 'Décembre 2027'
+            ],
+            2028: [
+                'Janvier 2028', 'Février 2028', 'Mars 2028', 'Avril 2028', 'Mai 2028', 'Juin 2028',
+                'Juillet 2028', 'Août 2028', 'Septembre 2028', 'Octobre 2028', 'Novembre 2028', 'Décembre 2028'
+            ]
+        };
+
+        let cotisationsData = {};
+        let currentYear = 2026;
+
+        function initData() {
+            const saved = localStorage.getItem('cotisationsData');
+            let needsInit = false;
+            
+            if (saved) {
+                try {
+                    cotisationsData = JSON.parse(saved);
+                    // Vérifier si toutes les clés existent
+                    const allMonths = Object.values(MONTHS_BY_YEAR).flat();
+                    for (let month of allMonths) {
+                        if (!cotisationsData[month] || 
+                            !cotisationsData[month].hasOwnProperty('mananga') || 
+                            !cotisationsData[month].hasOwnProperty('prodiges')) {
+                            needsInit = true;
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error loading data:', e);
+                    needsInit = true;
+                }
+            } else {
+                needsInit = true;
+            }
+
+            if (needsInit) {
+                // Initialiser toutes les années
+                cotisationsData = {};
+                Object.values(MONTHS_BY_YEAR).flat().forEach(month => {
+                    cotisationsData[month] = {
+                        mananga: { paid: false, amount: 0, date: null },
+                        prodiges: { paid: false, amount: 0, date: null }
+                    };
+                });
+                saveData();
+                console.log('Data initialized');
+            } else {
+                console.log('Data loaded from localStorage');
+            }
+            
+            checkYearCompletion();
+        }
+
+        function saveData() {
+            localStorage.setItem('cotisationsData', JSON.stringify(cotisationsData));
+        }
+
+        function checkYearCompletion() {
+            // Vérifier si l'année 2026 est complète pour débloquer 2027
+            const months2026 = MONTHS_BY_YEAR[2026];
+            const year2026Complete = months2026.every(month => 
+                cotisationsData[month].mananga.paid && cotisationsData[month].prodiges.paid
+            );
+
+            const year2027Btn = document.getElementById('year2027');
+            if (year2026Complete) {
+                year2027Btn.disabled = false;
+                year2027Btn.querySelector('.lock-icon').textContent = '✓';
+            } else {
+                year2027Btn.disabled = true;
+                year2027Btn.querySelector('.lock-icon').textContent = '🔒';
+            }
+
+            // Vérifier si l'année 2027 est complète pour débloquer 2028
+            const months2027 = MONTHS_BY_YEAR[2027];
+            const year2027Complete = months2027.every(month => 
+                cotisationsData[month].mananga.paid && cotisationsData[month].prodiges.paid
+            );
+
+            const year2028Btn = document.getElementById('year2028');
+            if (year2027Complete) {
+                year2028Btn.disabled = false;
+                year2028Btn.querySelector('.lock-icon').textContent = '✓';
+            } else {
+                year2028Btn.disabled = true;
+                year2028Btn.querySelector('.lock-icon').textContent = '🔒';
+            }
+
+            // Afficher un message si l'année actuelle n'est pas complète
+            const alertContainer = document.getElementById('alertContainer');
+            const currentMonths = MONTHS_BY_YEAR[currentYear];
+            const currentYearComplete = currentMonths.every(month => 
+                cotisationsData[month].mananga.paid && cotisationsData[month].prodiges.paid
+            );
+
+            if (!currentYearComplete && currentYear < 2028) {
+                const nextYear = currentYear + 1;
+                alertContainer.innerHTML = `
+                    <div class="alert-message">
+                        ⚠️ Complétez tous les paiements de ${currentYear} pour débloquer l'année ${nextYear}
+                    </div>
+                `;
+            } else if (currentYearComplete && currentYear < 2028) {
+                alertContainer.innerHTML = `
+                    <div class="alert-message" style="background: #dcfce7; border-color: #10b981; color: #065f46;">
+                        ✅ Année ${currentYear} complète ! Vous pouvez passer à l'année suivante.
+                    </div>
+                `;
+            } else {
+                alertContainer.innerHTML = '';
+            }
+        }
+
+        function selectYear(year) {
+            // Mettre à jour l'année courante
+            currentYear = year;
+
+            // Mettre à jour les boutons
+            document.querySelectorAll('.year-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`year${year}`).classList.add('active');
+
+            // Mettre à jour le titre
+            document.getElementById('tableYearTitle').textContent = `Registre ${year}`;
+
+            // Rafraîchir l'affichage
+            renderTable();
+            updateStats();
+            checkYearCompletion();
+        }
+
+        function togglePayment(month, person) {
+            console.log('Toggle payment called:', month, person);
+            const data = cotisationsData[month][person];
+            const wasPaid = data.paid;
+            
+            if (!data.paid) {
+                // Demander le montant si on passe à "Payé"
+                const amount = prompt(`💰 Entrez le montant de la cotisation pour ${person === 'mananga' ? 'MANANGA KIBANGOU' : 'BADINGOUSSOU-PEMBA'} (${month}):`, '100000');
+                
+                if (amount === null) {
+                    // Utilisateur a annulé
+                    return;
+                }
+                
+                const parsedAmount = parseFloat(amount);
+                if (isNaN(parsedAmount) || parsedAmount <= 0) {
+                    alert('⚠️ Veuillez entrer un montant valide (nombre positif)');
+                    return;
+                }
+                
+                data.paid = true;
+                data.amount = parsedAmount;
+                data.date = new Date().toLocaleDateString('fr-FR');
+                
+                // Sauvegarder et mettre à jour l'affichage d'abord
+                saveData();
+                renderTable();
+                updateStats();
+                checkYearCompletion();
+                
+                // Calculer les stats pour l'email
+                let totalCollected = 0;
+                Object.values(MONTHS_BY_YEAR).flat().forEach(m => {
+                    const d = cotisationsData[m];
+                    if (d && d.mananga && d.mananga.paid === true) {
+                        totalCollected += d.mananga.amount || 0;
+                    }
+                    if (d && d.prodiges && d.prodiges.paid === true) {
+                        totalCollected += d.prodiges.amount || 0;
+                    }
+                });
+                const recoveryRate = TOTAL_EXPECTED > 0 ? (totalCollected / TOTAL_EXPECTED * 100).toFixed(1) : 0;
+                
+                // Envoyer l'email de notification
+                sendPaymentNotification(person, month, parsedAmount, totalCollected, recoveryRate);
+                
+            } else {
+                // Repasser à "Non payé"
+                data.paid = false;
+                data.amount = 0;
+                data.date = null;
+                
+                saveData();
+                renderTable();
+                updateStats();
+                checkYearCompletion();
+            }
+            
+            console.log('Payment toggled:', { month, person, wasPaid, nowPaid: data.paid, amount: data.amount });
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            const months = MONTHS_BY_YEAR[currentYear];
+            months.forEach(month => {
+                const row = document.createElement('tr');
+                const data = cotisationsData[month];
+
+                row.innerHTML = `
+                    <td><strong>${month}</strong></td>
+                    <td>
+                        <button class="status-btn ${data.mananga.paid ? 'paid' : 'unpaid'}" 
+                                onclick="togglePayment('${month}', 'mananga')">
+                            ${data.mananga.paid ? '✓ Payé' : '✗ Non payé'}
+                        </button>
+                    </td>
+                    <td>
+                        <strong style="color: ${data.mananga.paid ? '#10b981' : '#6b7280'};">
+                            ${data.mananga.paid ? data.mananga.amount.toLocaleString('fr-FR') + ' FCFA' : '-'}
+                        </strong>
+                    </td>
+                    <td>
+                        <span class="date-display">${data.mananga.date || '-'}</span>
+                    </td>
+                    <td>
+                        <button class="status-btn ${data.prodiges.paid ? 'paid' : 'unpaid'}" 
+                                onclick="togglePayment('${month}', 'prodiges')">
+                            ${data.prodiges.paid ? '✓ Payé' : '✗ Non payé'}
+                        </button>
+                    </td>
+                    <td>
+                        <strong style="color: ${data.prodiges.paid ? '#10b981' : '#6b7280'};">
+                            ${data.prodiges.paid ? data.prodiges.amount.toLocaleString('fr-FR') + ' FCFA' : '-'}
+                        </strong>
+                    </td>
+                    <td>
+                        <span class="date-display">${data.prodiges.date || '-'}</span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateStats() {
+            let totalCollected = 0;
+            let manangaPaidCount = 0;
+            let prodigesPaidCount = 0;
+            let manangaTotalAmount = 0;
+            let prodigesTotalAmount = 0;
+
+            // Compter sur TOUTES les années
+            Object.values(MONTHS_BY_YEAR).flat().forEach(month => {
+                const data = cotisationsData[month];
+                if (data && data.mananga && data.mananga.paid === true) {
+                    const amount = data.mananga.amount || 0;
+                    totalCollected += amount;
+                    manangaTotalAmount += amount;
+                    manangaPaidCount++;
+                }
+                if (data && data.prodiges && data.prodiges.paid === true) {
+                    const amount = data.prodiges.amount || 0;
+                    totalCollected += amount;
+                    prodigesTotalAmount += amount;
+                    prodigesPaidCount++;
+                }
+            });
+
+            const remaining = TOTAL_EXPECTED - totalCollected;
+            const rate = TOTAL_EXPECTED > 0 ? (totalCollected / TOTAL_EXPECTED * 100).toFixed(1) : 0;
+
+            // Mise à jour du DOM
+            const totalExpectedEl = document.getElementById('totalExpected');
+            const totalCollectedEl = document.getElementById('totalCollected');
+            const remainingEl = document.getElementById('remaining');
+            const recoveryRateEl = document.getElementById('recoveryRate');
+            
+            if (totalExpectedEl) totalExpectedEl.textContent = TOTAL_EXPECTED.toLocaleString('fr-FR') + ' FCFA';
+            if (totalCollectedEl) totalCollectedEl.textContent = totalCollected.toLocaleString('fr-FR') + ' FCFA';
+            if (remainingEl) remainingEl.textContent = remaining.toLocaleString('fr-FR') + ' FCFA';
+            if (recoveryRateEl) recoveryRateEl.textContent = rate + '%';
+
+            const manangaPaidEl = document.getElementById('manangaPaid');
+            const manangaTotalEl = document.getElementById('manangaTotal');
+            const manangaProgressEl = document.getElementById('manangaProgress');
+            
+            if (manangaPaidEl) manangaPaidEl.textContent = `${manangaPaidCount} / ${TOTAL_MONTHS}`;
+            if (manangaTotalEl) manangaTotalEl.textContent = manangaTotalAmount.toLocaleString('fr-FR') + ' FCFA';
+            if (manangaProgressEl) manangaProgressEl.style.width = (manangaPaidCount / TOTAL_MONTHS * 100) + '%';
+
+            const prodigesPaidEl = document.getElementById('prodigesPaid');
+            const prodigesTotalEl = document.getElementById('prodigesTotal');
+            const prodigesProgressEl = document.getElementById('prodigesProgress');
+            
+            if (prodigesPaidEl) prodigesPaidEl.textContent = `${prodigesPaidCount} / ${TOTAL_MONTHS}`;
+            if (prodigesTotalEl) prodigesTotalEl.textContent = prodigesTotalAmount.toLocaleString('fr-FR') + ' FCFA';
+            if (prodigesProgressEl) prodigesProgressEl.style.width = (prodigesPaidCount / TOTAL_MONTHS * 100) + '%';
+
+            console.log('Stats updated:', { totalCollected, manangaPaidCount, prodigesPaidCount, rate });
+        }
+
+        function exportToExcel() {
+            let csv = 'Mois,MANANGA KIBANGOU,Montant MANANGA,Date Paiement MANANGA,BADINGOUSSOU-PEMBA Prodiges,Montant PRODIGES,Date Paiement PRODIGES\n';
+            
+            // Exporter toutes les années
+            Object.values(MONTHS_BY_YEAR).flat().forEach(month => {
+                const data = cotisationsData[month];
+                csv += `${month},`;
+                csv += `${data.mananga.paid ? 'Payé' : 'Non payé'},`;
+                csv += `${data.mananga.paid ? data.mananga.amount : ''},`;
+                csv += `${data.mananga.date || ''},`;
+                csv += `${data.prodiges.paid ? 'Payé' : 'Non payé'},`;
+                csv += `${data.prodiges.paid ? data.prodiges.amount : ''},`;
+                csv += `${data.prodiges.date || ''}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `cotisations_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function resetAllData() {
+            if (confirm('⚠️ Êtes-vous sûr de vouloir réinitialiser toutes les données ? Cette action est irréversible.')) {
+                localStorage.removeItem('cotisationsData');
+                cotisationsData = {};
+                Object.values(MONTHS_BY_YEAR).flat().forEach(month => {
+                    cotisationsData[month] = {
+                        mananga: { paid: false, amount: 0, date: null },
+                        prodiges: { paid: false, amount: 0, date: null }
+                    };
+                });
+                saveData();
+                currentYear = 2026;
+                selectYear(2026);
+                alert('✅ Toutes les données ont été réinitialisées !');
+            }
+        }
+
+        window.onload = function() {
+            console.log('Application loading...');
+            loadAmount(); // Charger le montant sauvegardé
+            initData();
+            renderTable();
+            updateStats();
+            console.log('Application loaded successfully');
+        };
+    </script>
+</body>
+</html>
